@@ -4,10 +4,7 @@ from fastapi.templating import Jinja2Templates
 import sqlite3
 
 app = FastAPI()
-
-# On désactive le cache pour forcer Render à lire les templates à chaque fois
 templates = Jinja2Templates(directory="templates")
-templates.env.cache = None 
 
 # Connexion à la base de données
 def init_db():
@@ -30,7 +27,7 @@ init_db()
 # Page Publique pour les clients
 @app.get("/")
 def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(name="index.html", context={"request": request})
 
 @app.post("/commander")
 def commander(nom: str = Form(...), whatsapp: str = Form(...), projet: str = Form(...), budget: float = Form(...)):
@@ -43,7 +40,7 @@ def commander(nom: str = Form(...), whatsapp: str = Form(...), projet: str = For
 
 @app.get("/merci")
 def merci(request: Request):
-    return templates.TemplateResponse("merci.html", {"request": request})
+    return templates.TemplateResponse(name="merci.html", context={"request": request})
 
 # Dashboard Admin Privé
 @app.get("/admin")
@@ -58,7 +55,7 @@ def admin_dashboard(request: Request):
     chiffre_affaires = sum(c["budget"] for c in clients) if clients else 0
     
     conn.close()
-    return templates.TemplateResponse("admin.html", {
+    return templates.TemplateResponse(name="admin.html", context={
         "request": request, 
         "clients": clients, 
         "total_prospects": total_prospects, 
