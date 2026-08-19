@@ -25,12 +25,11 @@ def init_db():
 
 init_db()
 
-# 1. Page Publique pour les clients (Vitrine / Formulaire de commande)
+# Page Publique pour les clients
 @app.get("/")
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# Traitement de la commande envoyée par le client
 @app.post("/commander")
 def commander(nom: str = Form(...), whatsapp: str = Form(...), projet: str = Form(...), budget: float = Form(...)):
     conn = sqlite3.connect("clients.db")
@@ -38,23 +37,23 @@ def commander(nom: str = Form(...), whatsapp: str = Form(...), projet: str = For
     cursor.execute("INSERT INTO clients (nom, whatsapp, projet, budget) VALUES (?, ?, ?, ?)", (nom, whatsapp, projet, budget))
     conn.commit()
     conn.close()
-    # Redirection vers une page de succès ou retour avec un message
     return RedirectResponse(url="/merci", status_code=303)
 
 @app.get("/merci")
 def merci(request: Request):
     return templates.TemplateResponse("merci.html", {"request": request})
 
-# 2. Ton Dashboard Admin Privé
+# Dashboard Admin Privé
 @app.get("/admin")
 def admin_dashboard(request: Request):
     conn = sqlite3.connect("clients.db")
+    conn.row_factory = sqlite3.Row # Cette ligne permet d'accéder aux données par leur nom
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM clients")
     clients = cursor.fetchall()
     
     total_prospects = len(clients)
-    chiffre_affaires = sum(c[4] for c in clients) if clients else 0
+    chiffre_affaires = sum(c["budget"] for c in clients) if clients else 0
     
     conn.close()
     return templates.TemplateResponse("admin.html", {
@@ -62,4 +61,4 @@ def admin_dashboard(request: Request):
         "clients": clients, 
         "total_prospects": total_prospects, 
         "chiffre_affaires": chiffre_affaires
-    }) 
+    })

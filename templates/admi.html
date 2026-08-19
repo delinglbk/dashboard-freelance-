@@ -1,5 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Admin</title>
+</head>
 <body>
     <h1>Dashboard Admin (Privé) ⚡</h1>
     <div class="stats">
@@ -9,13 +13,18 @@
 
     <h2>Liste des clients</h2>
     <table border="1">
-        <tr><th>Nom</th><th>WhatsApp</th><th>Projet</th><th>Budget</th></tr>
+        <tr>
+            <th>Nom</th>
+            <th>WhatsApp</th>
+            <th>Projet</th>
+            <th>Budget</th>
+        </tr>
         {% for client in clients %}
         <tr>
-            <td>{{ client[1] }}</td>
-            <td>{{ client[2] }}</td>
-            <td>{{ client[3] }}</td>
-            <td>{{ client[4] }}$</td>
+            <td>{{ client["nom"] }}</td>
+            <td>{{ client["whatsapp"] }}</td>
+            <td>{{ client["projet"] }}</td>
+            <td>{{ client["budget"] }}$</td>
         </tr>
         {% endfor %}
     </table>
