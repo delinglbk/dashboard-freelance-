@@ -1,11 +1,13 @@
-
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 import sqlite3
 
 app = FastAPI()
+
+# On désactive le cache pour forcer Render à lire les templates à chaque fois
 templates = Jinja2Templates(directory="templates")
+templates.env.cache = None 
 
 # Connexion à la base de données
 def init_db():
@@ -47,7 +49,7 @@ def merci(request: Request):
 @app.get("/admin")
 def admin_dashboard(request: Request):
     conn = sqlite3.connect("clients.db")
-    conn.row_factory = sqlite3.Row # Cette ligne permet d'accéder aux données par leur nom
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM clients")
     clients = cursor.fetchall()
