@@ -1,111 +1,65 @@
-from fastapi import FastAPI, Form, Request, Path, Query
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
-from jinja2 import Environment, FileSystemLoader
+
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
 import sqlite3
-import re
-import io
-import csv
 
 app = FastAPI()
-env = Environment(loader=FileSystemLoader("templates"))
+templates = Jinja2Templates(directory="templates")
 
-conn = sqlite3.connect("clients.db", check_same_thread=False)
-cursor = conn.cursor()
-
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS leads (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        whatsapp TEXT,
-        project_type TEXT,
-        status TEXT,
-        budget TEXT
-    )
-""")
-conn.commit()
-
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request, search: str = Query(None), status_filter: str = Query(None)):
-    query = "SELECT * FROM leads WHERE 1=1"
-    params = []
-
-    if search:
-        query += " AND (name LIKE ? OR project_type LIKE ?)"
-        params.extend([f"%{search}%", f"%{search}%"])
-
-    if status_filter and status_filter != "Tous":
-        query += " AND status = ?"
-        params.append(status_filter)
-
-    cursor.execute(query, params)
-    leads = cursor.fetchall()
-    
-    cursor.execute("SELECT * FROM leads")
-    all_leads = cursor.fetchall()
-    total_leads = len(all_leads)
-    
-    total_revenue = 0
-    for lead in all_leads:
-        budget_str = lead[5]
-        numbers = re.findall(r'\d+', str(budget_str))
-        if numbers:
-            total_revenue += int(numbers[0])
-            
-    template = env.get_template("index.html")
-    html_content = template.render(
-        leads=leads, 
-        total_leads=total_leads, 
-        total_revenue=total_revenue,
-        search=search or "",
-        status_filter=status_filter or "Tous"
-    )
-    return HTMLResponse(content=html_content)
-
-@app.post("/add")
-async def add_lead(
-    name: str = Form(...), 
-    whatsapp: str = Form(...), 
-    project_type: str = Form(...), 
-    status: str = Form(...), 
-    budget: str = Form(...)
-):
-    cursor.execute(
-        "INSERT INTO leads (name, whatsapp, project_type, status, budget) VALUES (?, ?, ?, ?, ?)",
-        (name, whatsapp, project_type, status, budget)
-    )
+# Connexion à la base de données
+def init_db():
+    conn = sqlite3.connect("clients.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS clients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nom TEXT,
+            whatsapp TEXT,
+            projet TEXT,
+            budget REAL
+        )
+    """)
     conn.commit()
-    return RedirectResponse(url="/", status_code=303)
+    conn.close()
 
-@app.post("/update_status/{lead_id}")
-async def update_status(lead_id: int = Path(...), status: str = Form(...)):
-    cursor.execute("UPDATE leads SET status = ? WHERE id = ?", (status, lead_id))
+init_db()
+
+# 1. Page Publique pour les clients (Vitrine / Formulaire de commande)
+@app.get("/")
+def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+# Traitement de la commande envoyée par le client
+@app.post("/commander")
+def commander(nom: str = Form(...), whatsapp: str = Form(...), projet: str = Form(...), budget: float = Form(...)):
+    conn = sqlite3.connect("clients.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO clients (nom, whatsapp, projet, budget) VALUES (?, ?, ?, ?)", (nom, whatsapp, projet, budget))
     conn.commit()
-    return RedirectResponse(url="/", status_code=303)
+    conn.close()
+    # Redirection vers une page de succès ou retour avec un message
+    return RedirectResponse(url="/merci", status_code=303)
 
-@app.post("/delete/{lead_id}")
-async def delete_lead(lead_id: int = Path(...)):
-    cursor.execute("DELETE FROM leads WHERE id = ?", (lead_id,))
-    conn.commit()
-    return RedirectResponse(url="/", status_code=303)
+@app.get("/merci")
+def merci(request: Request):
+    return templates.TemplateResponse("merci.html", {"request": request})
 
-# Nouvelle route pour exporter les clients en fichier CSV (lisible par Excel)
-@app.get("/export")
-async def export_csv():
-    cursor.execute("SELECT name, whatsapp, project_type, status, budget FROM leads")
-    leads = cursor.fetchall()
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    # En-têtes du fichier
-    writer.writerow(["Nom du Client", "WhatsApp", "Type de Projet", "Statut", "Budget"])
+# 2. Ton Dashboard Admin Privé
+@app.get("/admin")
+def admin_dashboard(request: Request):
+    conn = sqlite3.connect("clients.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM clients")
+    clients = cursor.fetchall()
     
-    # Écriture des données
-    for lead in leads:
-        writer.writerow(lead)
-
-    output.seek(0)
-    return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=mes_prospects_freelance.csv"}
-    )
+    total_prospects = len(clients)
+    chiffre_affaires = sum(c[4] for c in clients) if clients else 0
+    
+    conn.close()
+    return templates.TemplateResponse("admin.html", {
+        "request": request, 
+        "clients": clients, 
+        "total_prospects": total_prospects, 
+        "chiffre_affaires": chiffre_affaires
+    }) 

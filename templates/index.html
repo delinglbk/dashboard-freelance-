@@ -1,134 +1,20 @@
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Dashboard Freelance - Enterprise</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-        }
-    </script>
+    <title>Commander chez Deling Lbk</title>
+    <!-- Ajoute ton CSS ici -->
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 p-6 transition-colors duration-300">
-    <div class="max-w-5xl mx-auto">
-        <!-- En-tête avec bouton Dark Mode et Export -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <div>
-                <h1 class="text-3xl font-extrabold">🚀 Dashboard Freelance</h1>
-                <span class="text-sm bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 font-semibold px-3 py-1 rounded-full">Mode Enterprise</span>
-            </div>
-            <div class="flex items-center gap-3">
-                <a href="/export" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition shadow flex items-center gap-2">
-                    📊 Exporter CSV
-                </a>
-                <button onclick="toggleDarkMode()" class="bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-700 transition">
-                    🌙 / ☀️ Thème
-                </button>
-            </div>
-        </div>
-        
-        <!-- Cartes de Statistiques (KPIs) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-white dark:bg-gray-800 p-4 rounded shadow border-l-4 border-blue-600 transition-colors">
-                <p class="text-gray-500 dark:text-gray-400 text-sm font-semibold">Total Prospects</p>
-                <h3 class="text-2xl font-bold">{{ total_leads }}</h3>
-            </div>
-            <div class="bg-white dark:bg-gray-800 p-4 rounded shadow border-l-4 border-green-600 transition-colors">
-                <p class="text-gray-500 dark:text-gray-400 text-sm font-semibold">Chiffre d'Affaires Potentiel</p>
-                <h3 class="text-2xl font-bold text-green-600">{{ total_revenue }}$</h3>
-            </div>
-            <div class="bg-white dark:bg-gray-800 p-4 rounded shadow border-l-4 border-purple-600 transition-colors">
-                <p class="text-gray-500 dark:text-gray-400 text-sm font-semibold">Statut du Système</p>
-                <h3 class="text-2xl font-bold text-purple-600">Opérationnel ⚡</h3>
-            </div>
-        </div>
-
-        <!-- Formulaire d'ajout de client -->
-        <form action="/add" method="post" class="bg-white dark:bg-gray-800 p-4 rounded shadow mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 transition-colors">
-            <input type="text" name="name" placeholder="Nom du Client" class="border dark:border-gray-700 bg-transparent p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-            <input type="text" name="whatsapp" placeholder="Numéro WhatsApp" class="border dark:border-gray-700 bg-transparent p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-            <input type="text" name="project_type" placeholder="Type de Projet" class="border dark:border-gray-700 bg-transparent p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-            <input type="text" name="budget" placeholder="Budget estimé (ex: 150$)" class="border dark:border-gray-700 bg-transparent p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-            <select name="status" class="border dark:border-gray-700 bg-white dark:bg-gray-900 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="À contacter">À contacter</option>
-                <option value="En cours">En cours</option>
-                <option value="Terminé">Terminé</option>
-            </select>
-            <button type="submit" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 font-semibold transition">Ajouter le client</button>
-        </form>
-
-        <!-- Barre de Recherche et Filtres -->
-        <form method="get" action="/" class="bg-white dark:bg-gray-800 p-4 rounded shadow mb-6 flex flex-col md:flex-row gap-4 items-center justify-between transition-colors">
-            <div class="w-full md:w-2/3">
-                <input type="text" name="search" value="{{ search }}" placeholder="Rechercher par nom ou type de projet..." class="border dark:border-gray-700 bg-transparent p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div class="w-full md:w-1/3 flex gap-2">
-                <select name="status_filter" class="border dark:border-gray-700 bg-white dark:bg-gray-900 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="Tous" {% if status_filter == 'Tous' %}selected{% endif %}>Tous les statuts</option>
-                    <option value="À contacter" {% if status_filter == 'À contacter' %}selected{% endif %}>À contacter</option>
-                    <option value="En cours" {% if status_filter == 'En cours' %}selected{% endif %}>En cours</option>
-                    <option value="Terminé" {% if status_filter == 'Terminé' %}selected{% endif %}>Terminé</option>
-                </select>
-                <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 font-semibold transition">Filtrer</button>
-            </div>
-        </form>
-
-        <!-- Tableau des clients -->
-        <div class="bg-white dark:bg-gray-800 rounded shadow overflow-hidden transition-colors">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
-                    <tr>
-                        <th class="p-3">Client / WhatsApp</th>
-                        <th class="p-3">Projet</th>
-                        <th class="p-3">Budget</th>
-                        <th class="p-3">Status</th>
-                        <th class="p-3 text-center">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for lead in leads %}
-                    <tr class="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
-                        <td class="p-3">
-                            <div class="font-bold">{{ lead[1] }}</div>
-                            <a href="https://wa.me/{{ lead[2] }}" target="_blank" class="text-green-600 dark:text-green-400 hover:underline text-sm font-medium">
-                                📱 WhatsApp: {{ lead[2] }}
-                            </a>
-                        </td>
-                        <td class="p-3 text-gray-600 dark:text-gray-300">{{ lead[3] }}</td>
-                        <td class="p-3 font-medium">{{ lead[5] }}</td>
-                        <td class="p-3">
-                            <form action="/update_status/{{ lead[0] }}" method="post" class="flex items-center space-x-2">
-                                <select name="status" onchange="this.form.submit()" class="border dark:border-gray-700 text-sm p-1 rounded bg-gray-50 dark:bg-gray-900 text-blue-600 dark:text-blue-400 font-semibold focus:outline-none">
-                                    <option value="À contacter" {% if lead[4] == 'À contacter' %}selected{% endif %}>À contacter</option>
-                                    <option value="En cours" {% if lead[4] == 'En cours' %}selected{% endif %}>En cours</option>
-                                    <option value="Terminé" {% if lead[4] == 'Terminé' %}selected{% endif %}>Terminé</option>
-                                </select>
-                            </form>
-                        </td>
-                        <td class="p-3 text-center">
-                            <form action="/delete/{{ lead[0] }}" method="post" onsubmit="return confirm('Voulez-vous vraiment supprimer ce client ?');">
-                                <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm font-semibold transition">
-                                    Supprimer
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="p-6 text-center text-gray-400 dark:text-gray-500">Aucun client trouvé.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        function toggleDarkMode() {
-            document.documentElement.classList.toggle('dark');
-        }
-    </script>
+<body>
+    <h1>Bienvenue sur mon espace Freelance</h1>
+    <p>Prêt à lancer ton projet ? Remplis ce formulaire :</p>
+    
+    <form action="/commander" method="POST">
+        <input type="text" name="nom" placeholder="Ton Nom" required><br>
+        <input type="text" name="whatsapp" placeholder="Ton Numéro WhatsApp" required><br>
+        <input type="text" name="projet" placeholder="Type de Projet" required><br>
+        <input type="number" name="budget" placeholder="Budget estimé ($)" required><br>
+        <button type="submit">Envoyer ma commande</button>
+    </form>
 </body>
 </html>
